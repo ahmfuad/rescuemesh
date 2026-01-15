@@ -7,3 +7,12 @@
 [submodule "rescuemesh-notification-service"]
 	path = rescuemesh-notification-service
 	url = https://github.com/KdbAzizul/rescuemesh-notification-service.git
+[submodule "rescuemesh-user-service"]
+	path = rescuemesh-user-service
+	url = https://github.com/ahmfuad/rescuemesh-user-service.git
+[submodule "rescuemesh-skill-service"]
+	path = rescuemesh-skill-service
+	url = https://github.com/ahmfuad/rescuemesh-skill-service.git
+[submodule "rescuemesh-disaster-service"]
+	path = rescuemesh-disaster-service
+	url = https://github.com/ahmfuad/rescuemesh-disaster-service.git
