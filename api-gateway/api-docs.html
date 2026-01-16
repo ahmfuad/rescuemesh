@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RescueMesh API Documentation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .nav { 
+            background: white;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .nav a { 
+            color: #667eea;
+            text-decoration: none;
+            margin-right: 2rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .nav a:hover { color: #764ba2; }
+        .service-section {
+            background: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .service-header {
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .service-header h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .service-header .meta {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 4px;
+        }
+        .endpoint-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .method {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-right: 1rem;
+            min-width: 70px;
+            text-align: center;
+        }
+        .method.get { background: #28a745; color: white; }
+        .method.post { background: #007bff; color: white; }
+        .method.put { background: #ffc107; color: #333; }
+        .method.delete { background: #dc3545; color: white; }
+        .path {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: #333;
+            font-weight: 500;
+        }
+        .description { 
+            color: #555;
+            margin-bottom: 1rem;
+        }
+        .params, .response {
+            background: white;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+        .params h4, .response h4 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        .param-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .param-item:last-child { border-bottom: none; }
+        .param-name {
+            font-family: 'Courier New', monospace;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .param-type {
+            color: #3498db;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+        .param-required {
+            background: #dc3545;
+            color: white;
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        .badge.active { background: #d4edda; color: #155724; }
+        .badge.dev { background: #fff3cd; color: #856404; }
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            background: white;
+            margin-top: 2rem;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>🚨 RescueMesh API Documentation</h1>
+            <p>Unified Disaster Skill Coordination Platform - Complete API Reference</p>
+        </div>
+    </div>
+
+    <div class="nav">
+        <a href="#service1">User Service</a>
+        <a href="#service2">Skill Service</a>
+        <a href="#service3">Disaster Service</a>
+        <a href="#service4">SOS Service</a>
+        <a href="#service5">Matching Service</a>
+        <a href="#service6">Notification Service</a>
+        <a href="/redoc" target="_blank">ReDoc (Disaster)</a>
+    </div>
+
+    <div class="container">
+        <!-- Service 1: User & Identity Service -->
+        <div id="service1" class="service-section">
+            <div class="service-header">
+                <h2>Service 1: User & Identity Service <span class="badge active">ACTIVE</span></h2>
+                <div class="meta">Port: 3001 | Technology: Go + Gin | Base Path: /api/users/</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/users/:userId</span>
+                </div>
+                <div class="description">Retrieve detailed user profile information by user ID.</div>
+                <div class="params">
+                    <h4>Parameters:</h4>
+                    <div class="param-item">
+                        <span class="param-name">userId</span>
+                        <span class="param-type">string</span>
+                        <span class="param-required">REQUIRED</span>
+                        <div>Path parameter - Unique user identifier</div>
+                    </div>
+                </div>
+                <div class="response">
+                    <h4>Example Response (200):</h4>
+                    <pre class="code-block">{
+  "userId": "user-001",
+  "name": "Rajesh Kumar",
+  "phoneNumber": "+91-9876543210",
+  "email": "rajesh.kumar@example.com",
+  "location": {
+    "latitude": 28.6139,
+    "longitude": 77.2090,
+    "address": "New Delhi, India"
+  },
+  "verificationStatus": "verified",
+  "createdAt": "2024-01-01T00:00:00Z"
+}</pre>
+                </div>
+                <div class="code-block">curl http://localhost:8000/api/users/user-001</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/users/:userId/location</span>
+                </div>
+                <div class="description">Get real-time location of a specific user.</div>
+                <div class="params">
+                    <h4>Parameters:</h4>
+                    <div class="param-item">
+                        <span class="param-name">userId</span>
+                        <span class="param-type">string</span>
+                        <span class="param-required">REQUIRED</span>
+                    </div>
+                </div>
+                <div class="response">
+                    <h4>Example Response (200):</h4>
+                    <pre class="code-block">{
+  "userId": "user-001",
+  "latitude": 28.6139,
+  "longitude": 77.2090,
+  "accuracy": 10.5,
+  "timestamp": "2024-01-15T12:30:00Z"
+}</pre>
+                </div>
+                <div class="code-block">curl http://localhost:8000/api/users/user-001/location</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/users/batch</span>
+                </div>
+                <div class="description">Retrieve multiple user profiles in a single request.</div>
+                <div class="params">
+                    <h4>Request Body:</h4>
+                    <pre class="code-block">{
+  "userIds": ["user-001", "user-002", "user-003"]
+}</pre>
+                </div>
+                <div class="response">
+                    <h4>Example Response (200):</h4>
+                    <pre class="code-block">{
+  "users": [
+    { "userId": "user-001", "name": "Rajesh Kumar", ... },
+    { "userId": "user-002", "name": "Priya Sharma", ... }
+  ]
+}</pre>
+                </div>
+                <div class="code-block">curl -X POST http://localhost:8000/api/users/batch \
+  -H "Content-Type: application/json" \
+  -d '{"userIds": ["user-001", "user-002"]}'</div>
+            </div>
+        </div>
+
+        <!-- Service 2: Skill & Resource Registry -->
+        <div id="service2" class="service-section">
+            <div class="service-header">
+                <h2>Service 2: Skill & Resource Registry <span class="badge active">ACTIVE</span></h2>
+                <div class="meta">Port: 3002 | Technology: Go + Gin | Base Paths: /api/skills/, /api/resources/, /api/disaster-templates/</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/skills</span>
+                </div>
+                <div class="description">Search for skills and volunteers with optional filtering.</div>
+                <div class="params">
+                    <h4>Query Parameters:</h4>
+                    <div class="param-item">
+                        <span class="param-name">disasterType</span>
+                        <span class="param-type">string</span>
+                        <div>Filter by disaster type (flood, earthquake, fire, etc.)</div>
+                    </div>
+                    <div class="param-item">
+                        <span class="param-name">location</span>
+                        <span class="param-type">string</span>
+                        <div>Format: "latitude,longitude" for geospatial search</div>
+                    </div>
+                    <div class="param-item">
+                        <span class="param-name">radius</span>
+                        <span class="param-type">number</span>
+                        <div>Search radius in kilometers (requires location)</div>
+                    </div>
+                </div>
+                <div class="response">
+                    <h4>Example Response (200):</h4>
+                    <pre class="code-block">{
+  "skills": [
+    {
+      "skillId": "skill-001",
+      "userId": "user-001",
+      "skillName": "Boat Operation",
+      "disasterTypes": ["flood"],
+      "proficiencyLevel": "expert",
+      "certifications": ["Marine Safety Certificate"],
+      "availability": true
+    }
+  ]
+}</pre>
+                </div>
+                <div class="code-block">curl "http://localhost:8000/api/skills?disasterType=flood&location=28.6,77.2&radius=50"</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/resources</span>
+                </div>
+                <div class="description">Query available disaster response resources.</div>
+                <div class="params">
+                    <h4>Query Parameters:</h4>
+                    <div class="param-item">
+                        <span class="param-name">disasterType</span>
+                        <span class="param-type">string</span>
+                        <div>Filter by disaster type</div>
+                    </div>
+                    <div class="param-item">
+                        <span class="param-name">available</span>
+                        <span class="param-type">boolean</span>
+                        <div>Filter by availability status</div>
+                    </div>
+                </div>
+                <div class="response">
+                    <h4>Example Response (200):</h4>
+                    <pre class="code-block">{
+  "resources": [
+    {
+      "resourceId": "res-001",
+      "userId": "user-001",
+      "resourceType": "rescue_boat",
+      "quantity": 1,
+      "condition": "excellent",
+      "available": true
+    }
+  ]
+}</pre>
+                </div>
+                <div class="code-block">curl "http://localhost:8000/api/resources?disasterType=flood&available=true"</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/disaster-templates/:type</span>
+                </div>
+                <div class="description">Get required skills and resources template for a disaster type.</div>
+                <div class="params">
+                    <h4>Parameters:</h4>
+                    <div class="param-item">
+                        <span class="param-name">type</span>
+                        <span class="param-type">string</span>
+                        <span class="param-required">REQUIRED</span>
+                        <div>Disaster type: flood, earthquake, fire, cyclone, landslide</div>
+                    </div>
+                </div>
+                <div class="response">
+                    <h4>Example Response (200):</h4>
+                    <pre class="code-block">{
+  "disasterType": "flood",
+  "requiredSkills": ["boat_operation", "swimming", "first_aid"],
+  "requiredResources": ["rescue_boat", "life_jacket", "rope"],
+  "priority": "high",
+  "estimatedVolunteers": 50
+}</pre>
+                </div>
+                <div class="code-block">curl http://localhost:8000/api/disaster-templates/flood</div>
+            </div>
+        </div>
+
+        <!-- Service 3: Disaster Event Service -->
+        <div id="service3" class="service-section">
+            <div class="service-header">
+                <h2>Service 3: Disaster Event Service <span class="badge active">ACTIVE</span></h2>
+                <div class="meta">Port: 3003 | Technology: Python + FastAPI | Base Path: /api/disasters/</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/disasters/active</span>
+                </div>
+                <div class="description">List all currently active disaster events.</div>
+                <div class="response">
+                    <h4>Example Response (200):</h4>
+                    <pre class="code-block">[
+  {
+    "disasterId": "disaster-001",
+    "disasterType": "flood",
+    "severity": "high",
+    "location": {
+      "latitude": 28.6139,
+      "longitude": 77.2090,
+      "address": "Yamuna River, Delhi"
+    },
+    "affectedArea": 25.5,
+    "status": "active",
+    "reportedAt": "2024-01-15T08:00:00Z"
+  }
+]</pre>
+                </div>
+                <div class="code-block">curl http://localhost:8000/api/disasters/active</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/disasters/:disasterId</span>
+                </div>
+                <div class="description">Get detailed information about a specific disaster.</div>
+                <div class="params">
+                    <h4>Parameters:</h4>
+                    <div class="param-item">
+                        <span class="param-name">disasterId</span>
+                        <span class="param-type">string</span>
+                        <span class="param-required">REQUIRED</span>
+                    </div>
+                </div>
+                <div class="code-block">curl http://localhost:8000/api/disasters/disaster-001</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/disasters/nearby</span>
+                </div>
+                <div class="description">Find disasters near a specific location.</div>
+                <div class="params">
+                    <h4>Query Parameters:</h4>
+                    <div class="param-item">
+                        <span class="param-name">latitude</span>
+                        <span class="param-type">number</span>
+                        <span class="param-required">REQUIRED</span>
+                    </div>
+                    <div class="param-item">
+                        <span class="param-name">longitude</span>
+                        <span class="param-type">number</span>
+                        <span class="param-required">REQUIRED</span>
+                    </div>
+                    <div class="param-item">
+                        <span class="param-name">radius</span>
+                        <span class="param-type">number</span>
+                        <div>Search radius in kilometers (default: 50)</div>
+                    </div>
+                </div>
+                <div class="code-block">curl "http://localhost:8000/api/disasters/nearby?latitude=28.6&longitude=77.2&radius=100"</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/disasters</span>
+                </div>
+                <div class="description">Report a new disaster event.</div>
+                <div class="params">
+                    <h4>Request Body:</h4>
+                    <pre class="code-block">{
+  "disasterType": "flood",
+  "severity": "high",
+  "latitude": 28.6139,
+  "longitude": 77.2090,
+  "address": "Delhi, India",
+  "description": "Heavy flooding in residential area",
+  "reportedBy": "user-001"
+}</pre>
+                </div>
+                <div class="code-block">curl -X POST http://localhost:8000/api/disasters \
+  -H "Content-Type: application/json" \
+  -d '{"disasterType":"flood","severity":"high",...}'</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/disasters/types/stats</span>
+                </div>
+                <div class="description">Get statistics on disaster types.</div>
+                <div class="code-block">curl http://localhost:8000/api/disasters/types/stats</div>
+            </div>
+        </div>
+
+        <!-- Service 4: SOS Service -->
+        <div id="service4" class="service-section">
+            <div class="service-header">
+                <h2>Service 4: Emergency Request (SOS) Service <span class="badge dev">IN DEVELOPMENT</span></h2>
+                <div class="meta">Port: 3004 | Technology: Node.js + Express | Base Path: /api/sos/</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/sos/requests</span>
+                </div>
+                <div class="description">Create a new emergency SOS request.</div>
+                <div class="params">
+                    <h4>Request Body:</h4>
+                    <pre class="code-block">{
+  "userId": "user-001",
+  "disasterId": "disaster-001",
+  "urgencyLevel": "critical",
+  "requiredSkills": ["boat_operation", "first_aid"],
+  "location": {
+    "latitude": 28.6139,
+    "longitude": 77.2090
+  },
+  "description": "Person trapped in flooded building"
+}</pre>
+                </div>
+                <div class="code-block">curl -X POST http://localhost:8000/api/sos/requests \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"user-001","urgencyLevel":"critical",...}'</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/sos/requests</span>
+                </div>
+                <div class="description">List all SOS requests with optional filters.</div>
+                <div class="params">
+                    <h4>Query Parameters:</h4>
+                    <div class="param-item">
+                        <span class="param-name">status</span>
+                        <span class="param-type">string</span>
+                        <div>Filter by status: pending, assigned, in_progress, resolved</div>
+                    </div>
+                    <div class="param-item">
+                        <span class="param-name">disasterId</span>
+                        <span class="param-type">string</span>
+                        <div>Filter by disaster ID</div>
+                    </div>
+                </div>
+                <div class="code-block">curl "http://localhost:8000/api/sos/requests?status=pending"</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/sos/requests/:requestId</span>
+                </div>
+                <div class="description">Get details of a specific SOS request.</div>
+                <div class="code-block">curl http://localhost:8000/api/sos/requests/sos-001</div>
+            </div>
+        </div>
+
+        <!-- Service 5: Matching Service -->
+        <div id="service5" class="service-section">
+            <div class="service-header">
+                <h2>Service 5: Intelligent Matching Service <span class="badge dev">IN DEVELOPMENT</span></h2>
+                <div class="meta">Port: 3005 | Technology: Node.js + Express | Base Path: /api/matching/</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/matching/match</span>
+                </div>
+                <div class="description">Trigger matching algorithm for an SOS request.</div>
+                <div class="params">
+                    <h4>Request Body:</h4>
+                    <pre class="code-block">{
+  "sosRequestId": "sos-001",
+  "maxMatches": 10,
+  "radiusKm": 50
+}</pre>
+                </div>
+                <div class="response">
+                    <h4>Example Response (200):</h4>
+                    <pre class="code-block">{
+  "matches": [
+    {
+      "volunteerId": "user-002",
+      "score": 95.5,
+      "distance": 2.3,
+      "skills": ["boat_operation", "first_aid"],
+      "availability": true,
+      "estimatedArrival": "15 minutes"
+    }
+  ]
+}</pre>
+                </div>
+                <div class="code-block">curl -X POST http://localhost:8000/api/matching/match \
+  -H "Content-Type: application/json" \
+  -d '{"sosRequestId":"sos-001","maxMatches":10}'</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/matching/results/:sosRequestId</span>
+                </div>
+                <div class="description">Get matching results for a specific SOS request.</div>
+                <div class="code-block">curl http://localhost:8000/api/matching/results/sos-001</div>
+            </div>
+        </div>
+
+        <!-- Service 6: Notification Service -->
+        <div id="service6" class="service-section">
+            <div class="service-header">
+                <h2>Service 6: Notification & Communication Service <span class="badge dev">IN DEVELOPMENT</span></h2>
+                <div class="meta">Port: 3006 | Technology: Node.js + Express | Base Path: /api/notifications/</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/notifications/send</span>
+                </div>
+                <div class="description">Send notification to users via multiple channels.</div>
+                <div class="params">
+                    <h4>Request Body:</h4>
+                    <pre class="code-block">{
+  "userId": "user-002",
+  "type": "sos_match",
+  "priority": "high",
+  "channels": ["sms", "push"],
+  "message": "You have been matched to an emergency request",
+  "data": {
+    "sosRequestId": "sos-001",
+    "location": "Delhi, India"
+  }
+}</pre>
+                </div>
+                <div class="code-block">curl -X POST http://localhost:8000/api/notifications/send \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"user-002","type":"sos_match",...}'</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/notifications/history/:userId</span>
+                </div>
+                <div class="description">Get notification history for a user.</div>
+                <div class="code-block">curl http://localhost:8000/api/notifications/history/user-001</div>
+            </div>
+        </div>
+
+        <!-- Health Endpoints -->
+        <div class="service-section">
+            <div class="service-header">
+                <h2>Health Check Endpoints</h2>
+                <div class="meta">Monitor service availability and status</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/health</span>
+                </div>
+                <div class="description">Gateway health check.</div>
+                <div class="code-block">curl http://localhost:8000/health</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-title">
+                    <span class="method get">GET</span>
+                    <span class="path">/health/{service}</span>
+                </div>
+                <div class="description">Individual service health checks.</div>
+                <div class="params">
+                    <h4>Available Services:</h4>
+                    <div class="param-item">user, skill, disaster, sos, matching, notification</div>
+                </div>
+                <div class="code-block">curl http://localhost:8000/health/user
+curl http://localhost:8000/health/skill
+curl http://localhost:8000/health/disaster</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <h3>RescueMesh API Gateway</h3>
+        <p>Version 1.0.0 | Port 8000 | <a href="/">Home</a> | <a href="/redoc" target="_blank">ReDoc</a></p>
+        <p style="margin-top: 1rem; font-size: 0.9rem;">For support or questions, contact your development team.</p>
+    </div>
+</body>
+</html>

@@ -2,6 +2,57 @@ version: '3.8'
 
 services:
   # PostgreSQL Databases
+  postgres-users:
+    image: postgres:15-alpine
+    container_name: postgres-users
+    environment:
+      POSTGRES_DB: rescuemesh_users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5431:5432"
+    volumes:
+      - postgres-users-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-skills:
+    image: postgres:15-alpine
+    container_name: postgres-skills
+    environment:
+      POSTGRES_DB: rescuemesh_skills
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-skills-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-disasters:
+    image: postgres:15-alpine
+    container_name: postgres-disasters
+    environment:
+      POSTGRES_DB: rescuemesh_disasters
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-disasters-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   postgres-sos:
     image: postgres:15-alpine
     container_name: postgres-sos
@@ -54,6 +105,39 @@ services:
       retries: 5
 
   # Redis Instances
+  redis-users:
+    image: redis:7-alpine
+    container_name: redis-users
+    ports:
+      - "6371:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  redis-skills:
+    image: redis:7-alpine
+    container_name: redis-skills
+    ports:
+      - "6372:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  redis-disasters:
+    image: redis:7-alpine
+    container_name: redis-disasters
+    ports:
+      - "6373:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   redis-sos:
     image: redis:7-alpine
     container_name: redis-sos
@@ -104,6 +188,88 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Friend's Services (Services 1-3)
+  user-service:
+    build:
+      context: ./rescuemesh-user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_HOST=postgres-users
+      - DB_PORT=5432
+      - DB_NAME=rescuemesh_users
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_HOST=redis-users
+      - REDIS_PORT=6379
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+    depends_on:
+      postgres-users:
+        condition: service_healthy
+      redis-users:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  skill-service:
+    build:
+      context: ./rescuemesh-skill-service
+      dockerfile: Dockerfile
+    container_name: skill-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - DB_HOST=postgres-skills
+      - DB_PORT=5432
+      - DB_NAME=rescuemesh_skills
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_HOST=redis-skills
+      - REDIS_PORT=6379
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+    depends_on:
+      postgres-skills:
+        condition: service_healthy
+      redis-skills:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  disaster-service:
+    build:
+      context: ./rescuemesh-disaster-service
+      dockerfile: Dockerfile
+    container_name: disaster-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - DB_HOST=postgres-disasters
+      - DB_PORT=5432
+      - DB_NAME=rescuemesh_disasters
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_HOST=redis-disasters
+      - REDIS_PORT=6379
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+    depends_on:
+      postgres-disasters:
+        condition: service_healthy
+      redis-disasters:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
 
   # Your Services
   sos-service:
@@ -217,13 +383,20 @@ services:
       - "8000:80"
     volumes:
       - ./api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./api-gateway/api-docs.html:/usr/share/nginx/html/api-docs.html:ro
     depends_on:
       - sos-service
       - matching-service
       - notification-service
+      - user-service
+      - skill-service
+      - disaster-service
     restart: unless-stopped
 
 volumes:
+  postgres-users-data:
+  postgres-skills-data:
+  postgres-disasters-data:
   postgres-sos-data:
   postgres-matching-data:
   postgres-notification-data:

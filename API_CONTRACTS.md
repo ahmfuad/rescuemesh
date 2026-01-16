@@ -6,18 +6,21 @@ This document defines the API contracts between all services. **Critical for tea
 
 ## 🔗 Service Endpoints Overview
 
-| Service | Port | Base URL |
-|---------|------|----------|
-| User & Identity Service | 3001 | `http://user-service:3001` |
-| Skill & Resource Registry | 3002 | `http://skill-service:3002` |
-| Disaster Event Service | 3003 | `http://disaster-service:3003` |
-| **SOS Service (You)** | 3004 | `http://sos-service:3004` |
-| **Matching Service (You)** | 3005 | `http://matching-service:3005` |
-| **Notification Service (You)** | 3006 | `http://notification-service:3006` |
+| Service | Port | Base URL | Status |
+|---------|------|----------|--------|
+| User & Identity Service | 3001 | `http://user-service:3001` | ✅ Implemented (Go) |
+| Skill & Resource Registry | 3002 | `http://skill-service:3002` | ✅ Implemented (Go) |
+| Disaster Event Service | 3003 | `http://disaster-service:3003` | ✅ Implemented (Python) |
+| **SOS Service (You)** | 3004 | `http://sos-service:3004` | 🔄 In Development |
+| **Matching Service (You)** | 3005 | `http://matching-service:3005` | 🔄 In Development |
+| **Notification Service (You)** | 3006 | `http://notification-service:3006` | 🔄 In Development |
 
 ---
 
-## 📡 Service 1: User & Identity Service (Friend's Service)
+## 📡 Service 1: User & Identity Service ✅ IMPLEMENTED
+
+**Tech Stack**: Go + Gin Framework
+**Database**: PostgreSQL + Redis
 
 ### **GET /api/users/:userId**
 Get user details by ID.
@@ -37,7 +40,8 @@ Get user details by ID.
     "longitude": 77.2090,
     "lastUpdated": "2024-01-15T10:30:00Z"
   },
-  "status": "active" | "inactive"
+  "status": "active" | "inactive",
+  "trustScore": 8.5
 }
 ```
 
@@ -54,7 +58,7 @@ Get user's current location.
 }
 ```
 
-### **GET /api/users/batch**
+### **POST /api/users/batch**
 Get multiple users by IDs.
 
 **Request:**
@@ -64,9 +68,60 @@ Get multiple users by IDs.
 }
 ```
 
+**Response:**
+```json
+{
+  "users": [
+    {
+      "userId": "user-123",
+      "role": "volunteer",
+      "profile": { "name": "John Doe", "phone": "+1234567890" },
+      "location": { "latitude": 28.6139, "longitude": 77.2090 },
+      "status": "active"
+    }
+  ]
+}
+```
+
+### **PUT /api/users/:userId/location**
+Update user location.
+
+**Request:**
+```json
+{
+  "latitude": 28.6139,
+  "longitude": 77.2090
+}
+```
+
+### **POST /api/users**
+Create a new user.
+
+**Request:**
+```json
+{
+  "userId": "user-123",
+  "role": "volunteer",
+  "profile": {
+    "name": "John Doe",
+    "phone": "+1234567890",
+    "email": "john@example.com"
+  },
+  "location": {
+    "latitude": 28.6139,
+    "longitude": 77.2090
+  },
+  "status": "active",
+  "trustScore": 5.0
+}
+```
+
 ---
 
-## 🔧 Service 2: Skill & Resource Registry (Friend's Service)
+## 🔧 Service 2: Skill & Resource Registry ✅ IMPLEMENTED
+
+**Tech Stack**: Go + Gin Framework
+**Database**: PostgreSQL (with array support) + Redis
 
 ### **GET /api/skills?disasterType=flood&location={lat},{lng}&radius=10**
 Get available skills matching disaster type and location.
@@ -85,14 +140,15 @@ Get available skills matching disaster type and location.
       "userId": "user-123",
       "skillType": "boat_operator",
       "skillName": "Boat Operator",
-      "certificationLevel": "expert",
+      "certificationLevel": "expert" | "intermediate" | "beginner",
       "verified": true,
       "location": {
         "latitude": 28.6139,
         "longitude": 77.2090
       },
       "availability": "available" | "busy" | "unavailable",
-      "trustScore": 8.5
+      "trustScore": 8.5,
+      "disasterTypes": ["flood", "tsunami"]
     }
   ]
 }
@@ -115,7 +171,8 @@ Get available resources.
         "latitude": 28.6139,
         "longitude": 77.2090
       },
-      "availability": "available"
+      "availability": "available" | "in-use" | "unavailable",
+      "disasterTypes": ["flood", "tsunami"]
     }
   ]
 }
@@ -131,9 +188,24 @@ Update skill availability.
 }
 ```
 
+### **GET /api/disaster-templates/:disasterType**
+Get disaster-specific skill/resource templates.
+
+**Response:**
+```json
+{
+  "disasterType": "flood",
+  "requiredSkills": ["boat_operator", "swimmer", "medical", "rescue"],
+  "requiredResources": ["boat", "medical_kit", "life_jacket"]
+}
+```
+
 ---
 
-## 🌋 Service 3: Disaster Event Service (Friend's Service)
+## 🌋 Service 3: Disaster Event Service ✅ IMPLEMENTED
+
+**Tech Stack**: Python + FastAPI
+**Database**: PostgreSQL
 
 ### **GET /api/disasters/active**
 Get all active disasters.
@@ -144,10 +216,162 @@ Get all active disasters.
   "disasters": [
     {
       "disasterId": "disaster-123",
-      "disasterType": "flood",
-      "severity": "high" | "medium" | "low",
-      "status": "active" | "resolved",
+      "disasterType": "flood" | "earthquake" | "cyclone" | "fire" | "tsunami" | "landslide",
+      "severity": "low" | "medium" | "high" | "critical",
+      "status": "active" | "resolved" | "monitoring",
       "impactArea": {
+        "latitude": 28.6139,
+        "longitude": 77.2090,
+        "radius": 25.0
+      },
+      "affectedPopulation": 50000,
+      "startTime": "2024-01-15T10:00:00Z",
+      "endTime": null,
+      "description": "Severe flooding in Delhi NCR",
+      "createdAt": "2024-01-15T10:00:00Z"
+    }
+  ]
+}
+```
+
+### **GET /api/disasters/:disasterId**
+Get specific disaster details.
+
+**Response:**
+```json
+{
+  "disasterId": "disaster-123",
+  "disasterType": "flood",
+  "severity": "high",
+  "status": "active",
+  "impactArea": {
+    "latitude": 28.6139,
+    "longitude": 77.2090,
+    "radius": 25.0
+  },
+  "affectedPopulation": 50000,
+  "startTime": "2024-01-15T10:00:00Z",
+  "description": "Severe flooding in Delhi NCR"
+}
+```
+
+### **GET /api/disasters/nearby?latitude=28.6&longitude=77.2&radius=50**
+Get disasters near a location.
+
+### **POST /api/disasters**
+Create a new disaster event.
+
+**Request:**
+```json
+{
+  "disasterId": "disaster-123",
+  "disasterType": "flood",
+  "severity": "high",
+  "status": "active",
+  "impactArea": {
+    "latitude": 28.6139,
+    "longitude": 77.2090,
+    "radius": 25.0
+  },
+  "affectedPopulation": 50000,
+  "startTime": "2024-01-15T10:00:00Z",
+  "description": "Severe flooding"
+}
+```
+
+### **PUT /api/disasters/:disasterId**
+Update disaster status.
+
+**Request:**
+```json
+{
+  "status": "resolved",
+  "severity": "medium",
+  "affectedPopulation": 60000,
+  "endTime": "2024-01-15T20:00:00Z"
+}
+```
+
+### **GET /api/disasters/types/stats**
+Get statistics by disaster type.
+
+**Response:**
+```json
+{
+  "statistics": [
+    {
+      "disasterType": "flood",
+      "totalCount": 5,
+      "activeCount": 2,
+      "totalAffectedPopulation": 100000
+    }
+  ]
+}
+```
+
+---
+
+## 🆘 Service 4: Emergency Request (SOS) Service (YOUR SERVICE)
+
+### **POST /api/sos/requests**
+Create a new SOS request.
+
+**Request:**
+```json
+{
+  "disasterId": "disaster-123",
+  "requestedBy": "user-456",
+  "requiredSkills": ["boat_operator", "medic"],
+  "requiredResources": ["boat"],
+  "urgency": "critical" | "high" | "medium" | "low",
+  "numberOfPeople": 10,
+  "location": {
+    "latitude": 28.6139,
+    "longitude": 77.2090
+  },
+  "description": "Family trapped in flooded building",
+  "contactPhone": "+1234567890"
+}
+```
+
+**Response:**
+```json
+{
+  "requestId": "sos-123",
+  "disasterId": "disaster-123",
+  "requestedBy": "user-456",
+  "status": "pending" | "matched" | "in_progress" | "resolved" | "cancelled",
+  "requiredSkills": ["boat_operator", "medic"],
+  "requiredResources": ["boat"],
+  "urgency": "critical",
+  "numberOfPeople": 10,
+  "location": {
+    "latitude": 28.6139,
+    "longitude": 77.2090
+  },
+  "createdAt": "2024-01-15T10:30:00Z",
+  "matchedAt": null,
+  "resolvedAt": null
+}
+```
+
+### **GET /api/sos/requests**
+Get all SOS requests (with filters).
+
+**Query Params:**
+- `disasterId`: Filter by disaster
+- `status`: Filter by status
+- `urgency`: Filter by urgency
+- `location`: "lat,lng" with radius
+
+**Response:**
+```json
+{
+  "requests": [
+    {
+      "requestId": "sos-123",
+      "disasterId": "disaster-123",
+      "requestedBy": "user-456",
         "center": {
           "latitude": 28.6139,
           "longitude": 77.2090
