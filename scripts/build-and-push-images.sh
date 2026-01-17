@@ -9,11 +9,13 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-REGISTRY="registry.digitalocean.com/rescuemesh"
+# Set your DockerHub username here or pass as environment variable
+DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME:-kdbazizul}"
+REGISTRY="$DOCKERHUB_USERNAME"
 TAG="${1:-latest}"
 
 echo -e "${GREEN}RescueMesh - Build and Push All Container Images${NC}"
-echo "Registry: $REGISTRY"
+echo "Registry: DockerHub ($REGISTRY)"
 echo "Tag: $TAG"
 echo ""
 
@@ -31,8 +33,20 @@ echo "Using: $CONTAINER_CMD"
 echo ""
 
 # Ensure logged in to registry
-echo -e "${YELLOW}Ensuring authentication to Digital Ocean Container Registry...${NC}"
-doctl registry login
+echo -e "${YELLOW}Ensuring authentication to DockerHub...${NC}"
+if [ "$CONTAINER_CMD" = "podman" ]; then
+    if ! podman login docker.io --get-login &>/dev/null; then
+        echo "Please login to DockerHub:"
+        podman login docker.io
+    else
+        echo "Already logged in to DockerHub"
+    fi
+else
+    if ! docker login; then
+        echo -e "${RED}Failed to login to DockerHub${NC}"
+        exit 1
+    fi
+fi
 
 # Define services and their directories
 declare -A SERVICES=(
