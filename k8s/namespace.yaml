@@ -5,3 +5,62 @@ metadata:
   labels:
     name: rescuemesh
     environment: production
+    app.kubernetes.io/name: rescuemesh
+    app.kubernetes.io/managed-by: kubectl
+    istio-injection: disabled
+---
+# Resource Quota for the namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: rescuemesh-quota
+  namespace: rescuemesh
+  labels:
+    name: rescuemesh
+    environment: production
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: "40Gi"
+    limits.cpu: "40"
+    limits.memory: "80Gi"
+    persistentvolumeclaims: "20"
+    pods: "100"
+    services: "50"
+---
+# Limit Range to set default resource limits
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: rescuemesh-limitrange
+  namespace: rescuemesh
+  labels:
+    name: rescuemesh
+    environment: production
+spec:
+  limits:
+    - type: Container
+      max:
+        cpu: "4"
+        memory: "8Gi"
+      min:
+        cpu: "5m"
+        memory: "32Mi"
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+
+    - type: Pod
+      max:
+        cpu: "8"
+        memory: "16Gi"
+      min:
+        cpu: "100m"
+        memory: "128Mi"

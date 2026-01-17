@@ -1,0 +1,79 @@
+name: Database Backup
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+env:
+  DO_SPACES_BUCKET: rescuemesh-db-backups
+  DO_SPACES_REGION: nyc3
+
+jobs:
+  backup-databases:
+    name: Backup PostgreSQL Databases
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        database:
+          - users
+          - skills
+          - disasters
+          - sos
+          - matching
+          - notification
+    
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Save DO kubeconfig
+        run: doctl kubernetes cluster kubeconfig save rescuemesh-cluster
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Create database backup
+        env:
+          DB_NAME: ${{ matrix.database }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          POD_NAME=$(kubectl get pod -n rescuemesh -l app=postgres-${DB_NAME} -o jsonpath='{.items[0].metadata.name}')
+          
+          kubectl exec -n rescuemesh $POD_NAME -- pg_dump -U postgres rescuemesh_${DB_NAME} > backup_${DB_NAME}_${TIMESTAMP}.sql
+          
+          gzip backup_${DB_NAME}_${TIMESTAMP}.sql
+
+      - name: Upload to Digital Ocean Spaces
+        env:
+          DB_NAME: ${{ matrix.database }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET_KEY }}
+        run: |
+          pip install awscli
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          
+          aws s3 cp backup_${DB_NAME}_${TIMESTAMP}.sql.gz \
+            s3://${DO_SPACES_BUCKET}/postgres/${DB_NAME}/ \
+            --endpoint-url https://${DO_SPACES_REGION}.digitaloceanspaces.com
+
+      - name: Clean up old backups (keep last 30)
+        env:
+          DB_NAME: ${{ matrix.database }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET_KEY }}
+        run: |
+          pip install awscli
+          
+          # List and delete old backups
+          aws s3 ls s3://${DO_SPACES_BUCKET}/postgres/${DB_NAME}/ \
+            --endpoint-url https://${DO_SPACES_REGION}.digitaloceanspaces.com \
+            | sort | head -n -30 | awk '{print $4}' | \
+          while read file; do
+            aws s3 rm s3://${DO_SPACES_BUCKET}/postgres/${DB_NAME}/$file \
+              --endpoint-url https://${DO_SPACES_REGION}.digitaloceanspaces.com
+          done

@@ -17,9 +17,11 @@ spec:
         app: skill-service
         version: v1
     spec:
+      imagePullSecrets:
+      - name: regcred
       containers:
       - name: skill-service
-        image: rescuemesh/rescuemesh-skill-service:latest
+        image: kdbazizul/rescuemesh-skill-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3002

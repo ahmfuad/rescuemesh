@@ -1,0 +1,180 @@
+# SonarQube Configuration for Code Quality Analysis
+
+# Deployment configuration
+replicaCount: 1
+
+# Image configuration
+image:
+  repository: sonarqube
+  tag: 9.9-community  # LTS version
+  pullPolicy: IfNotPresent
+
+# Service configuration
+service:
+  type: ClusterIP
+  externalPort: 9000
+  internalPort: 9000
+
+# Ingress configuration
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+  hosts:
+    - name: sonarqube.villagers.live
+      path: /
+      pathType: Prefix
+  tls:
+    - secretName: sonarqube-tls
+      hosts:
+        - sonarqube.villagers.live
+
+# Resource allocation
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+
+# Persistence for SonarQube data
+persistence:
+  enabled: true
+  storageClass: do-block-storage-retain
+  accessMode: ReadWriteOnce
+  size: 20Gi
+  
+  # Mount paths
+  mounts:
+    - mountPath: /opt/sonarqube/data
+      name: sonarqube-data
+    - mountPath: /opt/sonarqube/extensions
+      name: sonarqube-extensions
+    - mountPath: /opt/sonarqube/logs
+      name: sonarqube-logs
+
+# PostgreSQL database for SonarQube
+postgresql:
+  enabled: true
+  
+  # PostgreSQL configuration
+  auth:
+    username: sonarqube
+    password: sonarqube  # Change in production!
+    database: sonarqube
+  
+  # Primary configuration
+  primary:
+    persistence:
+      enabled: true
+      storageClass: do-block-storage-retain
+      size: 20Gi
+    
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+# SonarQube configuration
+sonarProperties:
+  sonar.forceAuthentication: true
+  sonar.web.javaAdditionalOpts: -Xmx2g -Xms512m
+  sonar.ce.javaAdditionalOpts: -Xmx2g -Xms512m
+  sonar.search.javaAdditionalOpts: -Xmx2g -Xms512m
+
+# Environment variables
+env:
+  - name: SONAR_JDBC_USERNAME
+    value: sonarqube
+  - name: SONAR_JDBC_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: sonarqube-postgres
+        key: password
+  - name: SONAR_JDBC_URL
+    value: jdbc:postgresql://sonarqube-postgresql:5432/sonarqube
+
+# Plugins to install
+plugins:
+  install:
+    - "https://github.com/dependency-check/dependency-check-sonar-plugin/releases/download/3.0.1/sonar-dependency-check-plugin-3.0.1.jar"
+    - "https://github.com/sbaudoin/sonar-yaml/releases/download/v1.7.0/sonar-yaml-plugin-1.7.0.jar"
+
+# Init containers for sysctl settings
+initContainers:
+  - name: init-sysctl
+    image: busybox:latest
+    imagePullPolicy: IfNotPresent
+    securityContext:
+      privileged: true
+    command:
+      - sh
+      - -c
+      - |
+        sysctl -w vm.max_map_count=524288
+        sysctl -w fs.file-max=131072
+        ulimit -n 131072
+        ulimit -u 8192
+
+# Readiness and liveness probes
+livenessProbe:
+  httpGet:
+    path: /api/system/status
+    port: 9000
+  initialDelaySeconds: 120
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+
+readinessProbe:
+  httpGet:
+    path: /api/system/status
+    port: 9000
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+
+# Security context
+securityContext:
+  fsGroup: 1000
+
+# Affinity rules
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - sonarqube
+          topologyKey: kubernetes.io/hostname
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Additional configuration
+jvmOpts: "-Xmx2g -Xms512m"
+jvmCeOpts: "-Xmx2g -Xms512m"
+
+# Service account
+serviceAccount:
+  create: true
+  name: sonarqube
+
+# Enable admin password change on first startup
+account:
+  adminPassword: admin  # Change immediately after first login!
+  currentAdminPassword: admin

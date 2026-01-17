@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: disaster-service
-        image: rescuemesh/rescuemesh-disaster-service:latest
+        image: kdbazizul/rescuemesh-disaster-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3003

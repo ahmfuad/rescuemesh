@@ -1,0 +1,75 @@
+---
+# Daily full backup of rescuemesh namespace
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: rescuemesh-daily
+  namespace: velero
+spec:
+  schedule: "0 2 * * *"  # 2 AM daily
+  template:
+    includedNamespaces:
+      - rescuemesh
+    ttl: 720h  # 30 days
+    storageLocation: default
+    volumeSnapshotLocations:
+      - default
+    includeClusterResources: true
+---
+# Database backup every 6 hours
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: rescuemesh-db-backup
+  namespace: velero
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  template:
+    includedNamespaces:
+      - rescuemesh
+    labelSelector:
+      matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+            - postgresql
+    ttl: 168h  # 7 days
+    storageLocation: default
+    volumeSnapshotLocations:
+      - default
+---
+# ConfigMaps and Secrets backup
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: rescuemesh-config-backup
+  namespace: velero
+spec:
+  schedule: "0 3 * * *"  # 3 AM daily
+  template:
+    includedNamespaces:
+      - rescuemesh
+    includedResources:
+      - configmaps
+      - secrets
+      - persistentvolumeclaims
+      - persistentvolumes
+    ttl: 2160h  # 90 days
+    storageLocation: default
+---
+# Weekly backup with longer retention
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: rescuemesh-weekly
+  namespace: velero
+spec:
+  schedule: "0 1 * * 0"  # 1 AM every Sunday
+  template:
+    includedNamespaces:
+      - rescuemesh
+    ttl: 4320h  # 180 days (6 months)
+    storageLocation: default
+    volumeSnapshotLocations:
+      - default
+    includeClusterResources: true

@@ -1,0 +1,29 @@
+[0;32mRescueMesh - Build and Push All Container Images[0m
+Registry: registry.digitalocean.com/rescuemesh
+Tag: latest
+
+Using: podman
+
+[1;33mEnsuring authentication to Digital Ocean Container Registry...[0m
+Logging Docker in to registry.digitalocean.com
+Notice: Login valid for 30 days. Use the --expiry-seconds flag to set a shorter expiration or --never-expire for no expiration.
+[0;32m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;32mBuilding matching-service[0m
+  Directory: rescuemesh-matching-service
+  Image: registry.digitalocean.com/rescuemesh/rescuemesh-matching-service:latest
+  Building...
+STEP 1/8: FROM node:18-alpine
+Resolved "node" as an alias (/etc/containers/registries.conf.d/shortnames.conf)
+Trying to pull docker.io/library/node:18-alpine...
+Getting image source signatures
+Copying blob sha256:25ff2da83641908f65c3a74d80409d6b1b62ccfaab220b9ea70b80df5a2e0549
+Copying blob sha256:1e5a4c89cee5c0826c540ab06d4b6b491c96eda01837f430bd47f0d26702d6e3
+Copying blob sha256:dd71dde834b5c203d162902e6b8994cb2309ae049a0eabc4efea161b2b5a3d0e
+Copying blob sha256:f18232174bc91741fdf3da96d85011092101a032a93a388b79e99e69c2d5c870
+Copying config sha256:ee77c6cd7c1886ecc802ad6cedef3a8ec1ea27d1fb96162bf03dd3710839b8da
+Writing manifest to image destination
+STEP 2/8: WORKDIR /app
+--> 0ced65695903
+STEP 3/8: COPY package*.json ./
+--> ea1bb0cce173
+STEP 4/8: RUN npm install

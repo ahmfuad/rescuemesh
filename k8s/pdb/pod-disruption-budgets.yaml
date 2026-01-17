@@ -1,0 +1,108 @@
+---
+# PDB for User Service
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: user-service-pdb
+  namespace: rescuemesh
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: user-service
+---
+# PDB for Skill Service
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: skill-service-pdb
+  namespace: rescuemesh
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: skill-service
+---
+# PDB for Disaster Service
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: disaster-service-pdb
+  namespace: rescuemesh
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: disaster-service
+---
+# PDB for SOS Service
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: sos-service-pdb
+  namespace: rescuemesh
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: sos-service
+---
+# PDB for Matching Service
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: matching-service-pdb
+  namespace: rescuemesh
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: matching-service
+---
+# PDB for Notification Service
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service-pdb
+  namespace: rescuemesh
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: notification-service
+---
+# PDB for PostgreSQL databases
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgres-pdb
+  namespace: rescuemesh
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+---
+# PDB for Redis
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: redis-pdb
+  namespace: rescuemesh
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: redis
+---
+# PDB for RabbitMQ
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: rabbitmq-pdb
+  namespace: rescuemesh
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: rabbitmq

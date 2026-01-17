@@ -1,0 +1,55 @@
+# Production environment variables
+environment = "production"
+cluster_name = "rescuemesh-cluster"
+
+# Digital Ocean
+region = "nyc3"
+availability_zones = ["nyc3"]
+
+# Kubernetes
+kubernetes_version = "1.28.2-do.0"
+node_pool_size = "s-2vcpu-4gb"
+node_pool_min_nodes = 3
+node_pool_max_nodes = 10
+
+# Databases
+db_cluster_size = "db-s-2vcpu-4gb"
+db_cluster_node_count = 2
+
+# Domain
+domain = "villagers.live"
+
+# Features
+enable_autoscaling = true
+enable_monitoring = true
+enable_alerting = true
+enable_elk_stack = true
+enable_jaeger = true
+enable_sonarqube = true
+
+# Backups
+backup_retention_days = 30
+backup_space_name = "rescuemesh-backups"
+backup_space_region = "nyc3"
+
+# Registry
+registry_subscription_tier = "professional"
+
+# Tags
+tags = [
+  "rescuemesh",
+  "production",
+  "terraform-managed"
+]
+
+# Admin
+admin_email = "ahmfuad9@gmail.com"
+letsencrypt_email = "ahmfuad9@gmail.com"
+
+# Sensitive variables should be set via environment variables:
+# export TF_VAR_do_token="your-token"
+# export TF_VAR_cloudflare_api_token="your-token"
+# export TF_VAR_cloudflare_zone_id="your-zone-id"
+# export TF_VAR_postgres_password="your-password"
+# export TF_VAR_redis_password="your-password"
+# export TF_VAR_jwt_secret="your-secret"

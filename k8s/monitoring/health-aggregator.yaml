@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: health-aggregator-config
+  namespace: rescuemesh
+data:
+  index.js: |
+    const http = require('http');
+    const net = require('net');
+
+    const services = [
+      { name: 'user-service', host: 'user-service.rescuemesh.svc.cluster.local', port: 3001, path: '/health', type: 'http' },
+      { name: 'skill-service', host: 'skill-service.rescuemesh.svc.cluster.local', port: 3002, path: '/health', type: 'http' },
+      { name: 'disaster-service', host: 'disaster-service.rescuemesh.svc.cluster.local', port: 3003, path: '/health', type: 'http' },
+      { name: 'sos-service', host: 'sos-service.rescuemesh.svc.cluster.local', port: 3004, path: '/health', type: 'http' },
+      { name: 'matching-service', host: 'matching-service.rescuemesh.svc.cluster.local', port: 3005, path: '/health', type: 'http' },
+      { name: 'notification-service', host: 'notification-service.rescuemesh.svc.cluster.local', port: 3006, path: '/health', type: 'http' },
+      { name: 'postgres-users', host: 'postgres-users.rescuemesh.svc.cluster.local', port: 5432, type: 'tcp' },
+      { name: 'postgres-skills', host: 'postgres-skills.rescuemesh.svc.cluster.local', port: 5432, type: 'tcp' },
+      { name: 'postgres-disasters', host: 'postgres-disasters.rescuemesh.svc.cluster.local', port: 5432, type: 'tcp' },
+      { name: 'redis-users', host: 'redis-users.rescuemesh.svc.cluster.local', port: 6379, type: 'tcp' },
+      { name: 'rabbitmq', host: 'rabbitmq.rescuemesh.svc.cluster.local', port: 5672, type: 'tcp' }
+    ];
+
+    function checkHttpService(service) {
+      return new Promise((resolve) => {
+        const options = {
+          host: service.host,
+          port: service.port,
+          path: service.path || '/',
+          method: 'GET',
+          timeout: 2000
+        };
+
+        const req = http.request(options, (res) => {
+          resolve({ 
+            name: service.name, 
+            status: res.statusCode === 200 || res.statusCode === 404 ? 'healthy' : 'unhealthy',
+            code: res.statusCode 
+          });
+        });
+
+        req.on('error', () => {
+          resolve({ name: service.name, status: 'unhealthy', error: 'Connection failed' });
+        });
+
+        req.on('timeout', () => {
+          req.destroy();
+          resolve({ name: service.name, status: 'unhealthy', error: 'Timeout' });
+        });
+
+        req.end();
+      });
+    }
+
+    function checkTcpService(service) {
+      return new Promise((resolve) => {
+        const socket = new net.Socket();
+        
+        socket.setTimeout(2000);
+        
+        socket.on('connect', () => {
+          socket.destroy();
+          resolve({ name: service.name, status: 'healthy', info: 'Port accessible' });
+        });
+
+        socket.on('error', () => {
+          socket.destroy();
+          resolve({ name: service.name, status: 'unhealthy', error: 'Connection failed' });
+        });
+
+        socket.on('timeout', () => {
+          socket.destroy();
+          resolve({ name: service.name, status: 'unhealthy', error: 'Timeout' });
+        });
+
+        socket.connect(service.port, service.host);
+      });
+    }
+
+    function checkService(service) {
+      if (service.type === 'tcp') {
+        return checkTcpService(service);
+      } else {
+        return checkHttpService(service);
+      }
+    }
+
+    const server = http.createServer(async (req, res) => {
+      if (req.url === '/health' || req.url === '/') {
+        try {
+          const results = await Promise.all(services.map(checkService));
+          
+          const healthy = results.filter(r => r.status === 'healthy').length;
+          const total = results.length;
+          const allHealthy = healthy === total;
+
+          res.writeHead(allHealthy ? 200 : 503, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            status: allHealthy ? 'healthy' : 'degraded',
+            services: results,
+            summary: {
+              healthy: healthy,
+              total: total,
+              percentage: Math.round((healthy / total) * 100)
+            },
+            timestamp: new Date().toISOString()
+          }, null, 2));
+        } catch (error) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'error', error: error.message }));
+        }
+      } else {
+        res.writeHead(404);
+        res.end('Not Found');
+      }
+    });
+
+    server.listen(8080, () => {
+      console.log('Health aggregator listening on port 8080');
+    });
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: health-aggregator
+  namespace: rescuemesh
+  labels:
+    app: health-aggregator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: health-aggregator
+  template:
+    metadata:
+      labels:
+        app: health-aggregator
+    spec:
+      containers:
+      - name: health-aggregator
+        image: node:18-alpine
+        command: ["node", "/app/index.js"]
+        ports:
+        - containerPort: 8080
+          name: http
+        volumeMounts:
+        - name: config
+          mountPath: /app
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: config
+        configMap:
+          name: health-aggregator-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: health-aggregator
+  namespace: rescuemesh
+  labels:
+    app: health-aggregator
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: health-aggregator

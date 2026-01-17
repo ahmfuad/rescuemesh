@@ -4,8 +4,11 @@ kind: Kustomization
 namespace: rescuemesh
 
 resources:
-  # Namespace
+  # Namespace with resource quotas
   - namespace.yaml
+  
+  # Storage Classes
+  - storage/storageclass.yaml
   
   # ConfigMaps
   - configmaps/configmap-user-service.yaml
@@ -46,8 +49,26 @@ resources:
   - deployments/deployment-matching-service.yaml
   - deployments/deployment-notification-service.yaml
   
-  # HPA
+  # HPA (Horizontal Pod Autoscalers)
   - hpa/hpa-user-service.yaml
+  - hpa/hpa-skill-service.yaml
+  - hpa/hpa-disaster-service.yaml
+  - hpa/hpa-sos-service.yaml
+  - hpa/hpa-matching-service.yaml
+  - hpa/hpa-notification-service.yaml
+  
+  # Pod Disruption Budgets
+  - pdb/pod-disruption-budgets.yaml
+  
+  # Network Policies
+  - network-policies/default-deny.yaml
+  - network-policies/allow-ingress.yaml
+  
+  # Ingress
+  - ingress/ingress.yaml
+  
+  # ClusterIssuer (cert-manager)
+  - issuer.yaml
   - hpa/hpa-skill-service.yaml
   - hpa/hpa-disaster-service.yaml
   - hpa/hpa-sos-service.yaml

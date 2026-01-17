@@ -1,0 +1,23 @@
+---
+# Default deny all ingress traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: rescuemesh
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+# Default deny all egress traffic (too restrictive for most cases)
+# Uncomment if you want to explicitly allow all egress
+# apiVersion: networking.k8s.io/v1
+# kind: NetworkPolicy
+# metadata:
+#   name: default-deny-egress
+#   namespace: rescuemesh
+# spec:
+#   podSelector: {}
+#   policyTypes:
+#   - Egress

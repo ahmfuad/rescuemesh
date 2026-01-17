@@ -1,0 +1,389 @@
+# ELK Stack Configuration for RescueMesh
+# Elasticsearch + Logstash + Kibana
+
+# Elasticsearch - Distributed search and analytics
+elasticsearch:
+  enabled: true
+  
+  # Cluster settings
+  clusterName: "rescuemesh-logs"
+  nodeGroup: "master"
+  
+  # Replicas for high availability
+  replicas: 3
+  minimumMasterNodes: 2
+  
+  # Resource allocation
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+  
+  # JVM heap size (50% of memory limit)
+  esJavaOpts: "-Xmx2g -Xms2g"
+  
+  # Persistent storage
+  volumeClaimTemplate:
+    accessModes: ["ReadWriteOnce"]
+    storageClassName: do-block-storage-retain
+    resources:
+      requests:
+        storage: 100Gi
+  
+  # Security
+  esConfig:
+    elasticsearch.yml: |
+      xpack.security.enabled: true
+      xpack.security.transport.ssl.enabled: true
+      xpack.monitoring.collection.enabled: true
+  
+  # Index lifecycle management
+  extraEnvs:
+    - name: ELASTIC_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: elasticsearch-credentials
+          key: password
+    - name: discovery.type
+      value: zen
+  
+  # Anti-affinity for HA
+  antiAffinity: "soft"
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      - name: http
+        port: 9200
+        protocol: TCP
+      - name: transport
+        port: 9300
+        protocol: TCP
+
+# Kibana - Visualization and exploration
+kibana:
+  enabled: true
+  
+  replicas: 2
+  
+  # Resource allocation
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  
+  # Elasticsearch connection
+  elasticsearchHosts: "http://elasticsearch-master:9200"
+  
+  # Kibana configuration
+  kibanaConfig:
+    kibana.yml: |
+      server.name: rescuemesh-kibana
+      server.host: "0.0.0.0"
+      elasticsearch.username: "elastic"
+      elasticsearch.password: "${ELASTICSEARCH_PASSWORD}"
+      xpack.monitoring.enabled: true
+      xpack.graph.enabled: true
+      xpack.watcher.enabled: true
+  
+  # Environment variables
+  extraEnvs:
+    - name: ELASTICSEARCH_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: elasticsearch-credentials
+          key: password
+  
+  # Ingress configuration
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: kibana-auth
+      nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
+    hosts:
+      - host: kibana.villagers.live
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: kibana-tls
+        hosts:
+          - kibana.villagers.live
+  
+  # Service
+  service:
+    type: ClusterIP
+    port: 5601
+
+# Logstash - Data processing pipeline
+logstash:
+  enabled: true
+  
+  replicas: 2
+  
+  # Resource allocation
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1500m"
+      memory: "2Gi"
+  
+  # JVM settings
+  logstashJavaOpts: "-Xmx1g -Xms1g"
+  
+  # Pipeline configuration
+  logstashPipeline:
+    logstash.conf: |
+      input {
+        beats {
+          port => 5044
+        }
+        tcp {
+          port => 5000
+          codec => json
+        }
+        http {
+          port => 8080
+          codec => json
+        }
+      }
+      
+      filter {
+        # Parse JSON logs
+        if [message] =~ /^\{.*\}$/ {
+          json {
+            source => "message"
+          }
+        }
+        
+        # Add Kubernetes metadata
+        if [kubernetes] {
+          mutate {
+            add_field => {
+              "k8s_namespace" => "%{[kubernetes][namespace]}"
+              "k8s_pod" => "%{[kubernetes][pod][name]}"
+              "k8s_container" => "%{[kubernetes][container][name]}"
+            }
+          }
+        }
+        
+        # Parse log levels
+        grok {
+          match => { "message" => "%{LOGLEVEL:log_level}" }
+        }
+        
+        # Add timestamp
+        date {
+          match => [ "timestamp", "ISO8601" ]
+          target => "@timestamp"
+        }
+        
+        # GeoIP for IP addresses
+        if [client_ip] {
+          geoip {
+            source => "client_ip"
+            target => "geoip"
+          }
+        }
+      }
+      
+      output {
+        elasticsearch {
+          hosts => ["http://elasticsearch-master:9200"]
+          user => "elastic"
+          password => "${ELASTICSEARCH_PASSWORD}"
+          index => "rescuemesh-%{+YYYY.MM.dd}"
+          manage_template => true
+          template_name => "rescuemesh"
+          template_overwrite => true
+        }
+        
+        # Debug output (disable in production)
+        # stdout { codec => rubydebug }
+      }
+  
+  # Environment variables
+  extraEnvs:
+    - name: ELASTICSEARCH_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: elasticsearch-credentials
+          key: password
+  
+  # Service
+  service:
+    type: ClusterIP
+    ports:
+      - name: beats
+        port: 5044
+        protocol: TCP
+        targetPort: 5044
+      - name: tcp
+        port: 5000
+        protocol: TCP
+        targetPort: 5000
+      - name: http
+        port: 8080
+        protocol: TCP
+        targetPort: 8080
+
+# Filebeat - Ship logs to Logstash/Elasticsearch
+filebeat:
+  enabled: true
+  
+  # DaemonSet to run on all nodes
+  daemonset:
+    enabled: true
+  
+  # Resource allocation
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+  
+  # Filebeat configuration
+  filebeatConfig:
+    filebeat.yml: |
+      filebeat.inputs:
+      - type: container
+        paths:
+          - /var/log/containers/*.log
+        processors:
+        - add_kubernetes_metadata:
+            host: ${NODE_NAME}
+            matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+        - decode_json_fields:
+            fields: ["message"]
+            target: ""
+            overwrite_keys: true
+      
+      # Autodiscover for dynamic container discovery
+      filebeat.autodiscover:
+        providers:
+          - type: kubernetes
+            node: ${NODE_NAME}
+            hints.enabled: true
+            hints.default_config:
+              type: container
+              paths:
+                - /var/log/containers/*${data.kubernetes.container.id}.log
+      
+      # Output to Logstash
+      output.logstash:
+        hosts: ["logstash:5044"]
+        loadbalance: true
+        worker: 2
+      
+      # Processors
+      processors:
+        - add_cloud_metadata: {}
+        - add_host_metadata: {}
+        - add_docker_metadata: {}
+        - add_kubernetes_metadata:
+            host: ${NODE_NAME}
+            matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+  
+  # Host paths for log collection
+  extraVolumeMounts:
+    - name: varlog
+      mountPath: /var/log
+      readOnly: true
+    - name: varlibdockercontainers
+      mountPath: /var/lib/docker/containers
+      readOnly: true
+  
+  extraVolumes:
+    - name: varlog
+      hostPath:
+        path: /var/log
+    - name: varlibdockercontainers
+      hostPath:
+        path: /var/lib/docker/containers
+
+# Metricbeat - Collect metrics (optional)
+metricbeat:
+  enabled: true
+  
+  # DaemonSet for node metrics
+  daemonset:
+    enabled: true
+  
+  # Deployment for cluster-wide metrics
+  deployment:
+    enabled: true
+  
+  # Resource allocation
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+  
+  # Metricbeat configuration
+  metricbeatConfig:
+    metricbeat.yml: |
+      metricbeat.modules:
+      - module: system
+        period: 10s
+        metricsets:
+          - cpu
+          - load
+          - memory
+          - network
+          - process
+          - process_summary
+      
+      - module: kubernetes
+        period: 10s
+        host: ${NODE_NAME}
+        hosts: ["https://${NODE_NAME}:10250"]
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        ssl.verification_mode: "none"
+        metricsets:
+          - node
+          - system
+          - pod
+          - container
+          - volume
+      
+      output.elasticsearch:
+        hosts: ["http://elasticsearch-master:9200"]
+        username: "elastic"
+        password: "${ELASTICSEARCH_PASSWORD}"
+      
+      setup.kibana:
+        host: "http://kibana-kibana:5601"
+        username: "elastic"
+        password: "${ELASTICSEARCH_PASSWORD}"
+      
+      setup.dashboards.enabled: true
+      setup.ilm.enabled: true
+  
+  # Environment variables
+  extraEnvs:
+    - name: ELASTICSEARCH_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: elasticsearch-credentials
+          key: password
