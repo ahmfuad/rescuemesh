@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skill-service-config
+  namespace: rescuemesh
+data:
+  NODE_ENV: "production"
+  PORT: "3002"
+  DB_HOST: "postgres-skills.rescuemesh.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "rescuemesh_skills"
+  REDIS_HOST: "redis-skills.rescuemesh.svc.cluster.local"
+  REDIS_PORT: "6379"
+  SERVICE_TIMEOUT: "5000"
+  LOG_LEVEL: "info"

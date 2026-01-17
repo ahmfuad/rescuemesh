@@ -1,0 +1,196 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rescuemesh-ingress
+  namespace: rescuemesh
+  annotations:
+    # DigitalOcean Load Balancer annotations
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+    # CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization"
+spec:
+  tls:
+  - hosts:
+    - villagers.live
+    
+    secretName: rescuemesh-tls
+  rules:
+  - host: villagers.live
+    http:
+      paths:
+      # User Service
+      - path: /api/users
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 3001
+      # Skill Service
+      - path: /api/skills
+        pathType: Prefix
+        backend:
+          service:
+            name: skill-service
+            port:
+              number: 3002
+      - path: /api/resources
+        pathType: Prefix
+        backend:
+          service:
+            name: skill-service
+            port:
+              number: 3002
+      # Disaster Service
+      - path: /api/disasters
+        pathType: Prefix
+        backend:
+          service:
+            name: disaster-service
+            port:
+              number: 3003
+      # SOS Service
+      - path: /api/sos
+        pathType: Prefix
+        backend:
+          service:
+            name: sos-service
+            port:
+              number: 3004
+      # Matching Service
+      - path: /api/matching
+        pathType: Prefix
+        backend:
+          service:
+            name: matching-service
+            port:
+              number: 3005
+      # Notification Service
+      - path: /api/notifications
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
+            port:
+              number: 3006
+      # Health endpoints
+      - path: /health
+        pathType: Prefix
+        backend:
+          service:
+            name: sos-service
+            port:
+              number: 3004
+      # Swagger Docs
+      - path: /docs/user
+        pathType: Prefix
+        backend:
+          service:
+            name: user-service
+            port:
+              number: 3001
+      - path: /docs/skill
+        pathType: Prefix
+        backend:
+          service:
+            name: skill-service
+            port:
+              number: 3002
+      - path: /docs/disaster
+        pathType: Prefix
+        backend:
+          service:
+            name: disaster-service
+            port:
+              number: 3003
+      - path: /docs/sos
+        pathType: Prefix
+        backend:
+          service:
+            name: sos-service
+            port:
+              number: 3004
+      - path: /docs/matching
+        pathType: Prefix
+        backend:
+          service:
+            name: matching-service
+            port:
+              number: 3005
+      - path: /docs/notification
+        pathType: Prefix
+        backend:
+          service:
+            name: notification-service
+            port:
+              number: 3006
+
+# ---
+# # Alternative: Separate Ingress for Swagger docs
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: rescuemesh-docs-ingress
+#   namespace: rescuemesh
+#   annotations:
+#     kubernetes.io/ingress.class: "nginx"
+#     nginx.ingress.kubernetes.io/rewrite-target: /$1
+# spec:
+#   rules:
+#   - host: docs.rescuemesh.com
+#     http:
+#       paths:
+#       - path: /user/(.*)
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: user-service
+#             port:
+#               number: 3001
+#       - path: /skill/(.*)
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: skill-service
+#             port:
+#               number: 3002
+#       - path: /disaster/(.*)
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: disaster-service
+#             port:
+#               number: 3003
+#       - path: /sos/(.*)
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: sos-service
+#             port:
+#               number: 3004
+#       - path: /matching/(.*)
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: matching-service
+#             port:
+#               number: 3005
+#       - path: /notification/(.*)
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: notification-service
+#             port:
+#               number: 3006

@@ -1,0 +1,58 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: rescuemesh
+
+resources:
+  # Namespace
+  - namespace.yaml
+  
+  # ConfigMaps
+  - configmaps/configmap-user-service.yaml
+  - configmaps/configmap-skill-service.yaml
+  - configmaps/configmap-disaster-service.yaml
+  - configmaps/configmap-sos-service.yaml
+  - configmaps/configmap-matching-service.yaml
+  - configmaps/configmap-notification-service.yaml
+  
+  # Secrets (create manually or use sealed-secrets)
+  - secrets/secrets.yaml
+  
+  # Infrastructure (PostgreSQL, Redis, RabbitMQ)
+  - infrastructure/postgres-users-statefulset.yaml
+  - infrastructure/postgres-skills-statefulset.yaml
+  - infrastructure/postgres-disasters-statefulset.yaml
+  - infrastructure/postgres-sos-statefulset.yaml
+  - infrastructure/postgres-matching-statefulset.yaml
+  - infrastructure/postgres-notification-statefulset.yaml
+  - infrastructure/redis-users-deployment.yaml
+  - infrastructure/redis-skills-deployment.yaml
+  - infrastructure/redis-deployment.yaml
+  - infrastructure/rabbitmq-deployment.yaml
+  
+  # Services
+  - services/service-user-service.yaml
+  - services/service-skill-service.yaml
+  - services/service-disaster-service.yaml
+  - services/service-sos-service.yaml
+  - services/service-matching-service.yaml
+  - services/service-notification-service.yaml
+  
+  # Deployments
+  - deployments/deployment-user-service.yaml
+  - deployments/deployment-skill-service.yaml
+  - deployments/deployment-disaster-service.yaml
+  - deployments/deployment-sos-service.yaml
+  - deployments/deployment-matching-service.yaml
+  - deployments/deployment-notification-service.yaml
+  
+  # HPA
+  - hpa/hpa-user-service.yaml
+  - hpa/hpa-skill-service.yaml
+  - hpa/hpa-disaster-service.yaml
+  - hpa/hpa-sos-service.yaml
+  - hpa/hpa-matching-service.yaml
+  - hpa/hpa-notification-service.yaml
+  
+  # Ingress
+  - ingress/ingress.yaml

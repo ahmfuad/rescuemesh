@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: matching-service-config
+  namespace: rescuemesh
+data:
+  NODE_ENV: "production"
+  PORT: "3005"
+  DB_HOST: "postgres-matching.rescuemesh.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "rescuemesh_matching"
+  REDIS_HOST: "redis-matching.rescuemesh.svc.cluster.local"
+  REDIS_PORT: "6379"
+  RABBITMQ_URL: "amqp://admin:admin@rabbitmq.rescuemesh.svc.cluster.local:5672"
+  RABBITMQ_QUEUE_SOS: "sos.requests"
+  RABBITMQ_QUEUE_NOTIFICATION: "notifications.send"
+  USER_SERVICE_URL: "http://user-service.rescuemesh.svc.cluster.local:3001"
+  SKILL_SERVICE_URL: "http://skill-service.rescuemesh.svc.cluster.local:3002"
+  DISASTER_SERVICE_URL: "http://disaster-service.rescuemesh.svc.cluster.local:3003"
+  SOS_SERVICE_URL: "http://sos-service.rescuemesh.svc.cluster.local:3004"
+  NOTIFICATION_SERVICE_URL: "http://notification-service.rescuemesh.svc.cluster.local:3006"
+  MAX_MATCH_RADIUS: "50"
+  MATCH_SCORE_THRESHOLD: "5.0"
+  MAX_MATCHES_PER_REQUEST: "10"
+  SERVICE_TIMEOUT: "5000"
+  LOG_LEVEL: "info"

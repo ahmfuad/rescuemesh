@@ -31,6 +31,7 @@ git submodule update --init --recursive
 
 When a service repository is ready to be added:
 
+
 ```bash
 # Add the submodule
 git submodule add <repository-url> <service-directory>

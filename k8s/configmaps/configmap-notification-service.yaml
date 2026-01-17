@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-service-config
+  namespace: rescuemesh
+data:
+  NODE_ENV: "production"
+  PORT: "3006"
+  DB_HOST: "postgres-notification.rescuemesh.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "rescuemesh_notification"
+  REDIS_HOST: "redis-notification.rescuemesh.svc.cluster.local"
+  REDIS_PORT: "6379"
+  RABBITMQ_URL: "amqp://admin:admin@rabbitmq.rescuemesh.svc.cluster.local:5672"
+  RABBITMQ_QUEUE_NOTIFICATION: "notifications.send"
+  USER_SERVICE_URL: "http://user-service.rescuemesh.svc.cluster.local:3001"
+  SMS_ENABLED: "true"
+  PUSH_ENABLED: "true"
+  WHATSAPP_ENABLED: "false"
+  FALLBACK_TO_SMS: "true"
+  SERVICE_TIMEOUT: "5000"
+  LOG_LEVEL: "info"

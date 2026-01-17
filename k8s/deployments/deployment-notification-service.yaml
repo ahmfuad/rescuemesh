@@ -1,0 +1,166 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: rescuemesh
+  labels:
+    app: notification-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+        version: v1
+    spec:
+      containers:
+      - name: notification-service
+        image: rescuemesh/rescuemesh-notification-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3006
+          name: http
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: PORT
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: NODE_ENV
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: DB_PASSWORD
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: REDIS_PORT
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: RABBITMQ_URL
+        - name: RABBITMQ_QUEUE_NOTIFICATION
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: RABBITMQ_QUEUE_NOTIFICATION
+        - name: USER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: USER_SERVICE_URL
+        - name: SMS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: SMS_ENABLED
+        - name: PUSH_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: PUSH_ENABLED
+        - name: WHATSAPP_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: WHATSAPP_ENABLED
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: TWILIO_ACCOUNT_SID
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: TWILIO_AUTH_TOKEN
+        - name: TWILIO_PHONE_NUMBER
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: TWILIO_PHONE_NUMBER
+        - name: FIREBASE_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: FIREBASE_PROJECT_ID
+        - name: FIREBASE_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: FIREBASE_PRIVATE_KEY
+        - name: FIREBASE_CLIENT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: FIREBASE_CLIENT_EMAIL
+        - name: SERVICE_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: SERVICE_TIMEOUT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: notification-service-config
+              key: LOG_LEVEL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3006
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3006
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      restartPolicy: Always

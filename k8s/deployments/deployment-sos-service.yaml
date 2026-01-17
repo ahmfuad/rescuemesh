@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sos-service
+  namespace: rescuemesh
+  labels:
+    app: sos-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sos-service
+  template:
+    metadata:
+      labels:
+        app: sos-service
+        version: v1
+    spec:
+      containers:
+      - name: sos-service
+        image: rescuemesh/rescuemesh-sos-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3004
+          name: http
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: PORT
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: NODE_ENV
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rescuemesh-secrets
+              key: DB_PASSWORD
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: REDIS_PORT
+        - name: RABBITMQ_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: RABBITMQ_URL
+        - name: RABBITMQ_QUEUE_MATCHING
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: RABBITMQ_QUEUE_MATCHING
+        - name: USER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: USER_SERVICE_URL
+        - name: SKILL_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: SKILL_SERVICE_URL
+        - name: DISASTER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: DISASTER_SERVICE_URL
+        - name: MATCHING_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: MATCHING_SERVICE_URL
+        - name: SERVICE_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: SERVICE_TIMEOUT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: sos-service-config
+              key: LOG_LEVEL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      restartPolicy: Always
