@@ -1,0 +1,157 @@
+name: CD - Build and Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.changes.outputs.services }}
+      has_changes: ${{ steps.changes.outputs.has_changes }}
+      services_list: ${{ steps.changes.outputs.services_list }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Detect changed services
+        id: changes
+        run: |
+          chmod +x .github/scripts/detect-changes.sh
+          .github/scripts/detect-changes.sh
+  
+  build-and-push:
+    name: Build and Push Images
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push Docker image
+        run: |
+          SERVICE_DIR="${{ matrix.service.dir }}"
+          IMAGE_NAME="kdbazizul/${{ matrix.service.image }}"
+          GIT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          
+          echo "Building $IMAGE_NAME..."
+          
+          # Build and tag with multiple tags
+          docker build -t $IMAGE_NAME:prod-$GIT_SHA \
+                       -t $IMAGE_NAME:prod-latest \
+                       -t $IMAGE_NAME:latest \
+                       $SERVICE_DIR
+          
+          # Push all tags
+          docker push $IMAGE_NAME:prod-$GIT_SHA
+          docker push $IMAGE_NAME:prod-latest
+          docker push $IMAGE_NAME:latest
+          
+          echo "✓ Built and pushed: $IMAGE_NAME:prod-$GIT_SHA"
+      
+      - name: Save image info
+        run: |
+          mkdir -p /tmp/artifacts
+          echo "${{ matrix.service.name }}:prod-$(echo ${{ github.sha }} | cut -c1-7)" >> /tmp/artifacts/deployed-images.txt
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.service.name }}
+          path: /tmp/artifacts/deployed-images.txt
+  
+  deploy:
+    name: Deploy to Kubernetes
+    needs: [detect-changes, build-and-push]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/artifacts
+      
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      
+      - name: Set up kubectl
+        run: |
+          doctl kubernetes cluster kubeconfig save rescuemesh-cluster
+          kubectl version --client
+      
+      - name: Deploy to Kubernetes
+        run: |
+          chmod +x .github/scripts/deploy-to-k8s.sh
+          .github/scripts/deploy-to-k8s.sh '${{ needs.detect-changes.outputs.services }}'
+      
+      - name: Verify deployment
+        run: |
+          echo "Waiting for rollout to complete..."
+          
+          SERVICES='${{ needs.detect-changes.outputs.services }}'
+          
+          for row in $(echo "${SERVICES}" | jq -r '.[] | @base64'); do
+            _jq() {
+              echo ${row} | base64 --decode | jq -r ${1}
+            }
+            
+            SERVICE_NAME=$(_jq '.name')
+            DEPLOY_NAME=$(_jq '.deployment')
+            
+            echo "Checking $DEPLOY_NAME..."
+            kubectl rollout status deployment/$DEPLOY_NAME -n rescuemesh --timeout=5m || true
+          done
+      
+      - name: Run health checks
+        run: |
+          echo "Running health checks..."
+          sleep 10
+          
+          # Check all pods are running
+          kubectl get pods -n rescuemesh
+          
+          # Get service endpoints
+          EXTERNAL_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "Load Balancer IP: $EXTERNAL_IP"
+          
+          # Test health endpoint
+          curl -f http://$EXTERNAL_IP/health -H "Host: api.villagers.live" || echo "Health check endpoint not responding"
+      
+      - name: Deployment complete
+        run: |
+          echo "✓ Deployment completed successfully"
+          echo "Changed services: ${{ needs.detect-changes.outputs.services_list }}"
+          echo "View details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

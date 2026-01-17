@@ -1,0 +1,75 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to rollback'
+        required: true
+        type: choice
+        options:
+          - user-service
+          - skill-service
+          - disaster-service
+          - sos-service
+          - matching-service
+          - notification-service
+          - frontend
+      version:
+        description: 'Version/tag to rollback to (e.g., prod-abc1234)'
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    name: Rollback Service
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      
+      - name: Set up kubectl
+        run: |
+          doctl kubernetes cluster kubeconfig save rescuemesh-cluster
+          kubectl version --client
+      
+      - name: Rollback deployment
+        run: |
+          SERVICE="${{ github.event.inputs.service }}"
+          VERSION="${{ github.event.inputs.version }}"
+          IMAGE="kdbazizul/rescuemesh-$SERVICE:$VERSION"
+          
+          echo "Rolling back $SERVICE to $VERSION..."
+          
+          # Update the deployment image
+          kubectl set image deployment/$SERVICE \
+            $SERVICE=$IMAGE \
+            -n rescuemesh
+          
+          # Wait for rollout
+          kubectl rollout status deployment/$SERVICE -n rescuemesh --timeout=5m
+          
+          echo "✓ Rollback completed successfully"
+      
+      - name: Verify rollback
+        run: |
+          SERVICE="${{ github.event.inputs.service }}"
+          
+          echo "Current deployment status:"
+          kubectl get deployment $SERVICE -n rescuemesh
+          
+          echo "Pods status:"
+          kubectl get pods -l app=$SERVICE -n rescuemesh
+      
+      - name: Rollback complete
+        run: |
+          echo "✓ Rollback completed successfully"
+          echo "Service: ${{ github.event.inputs.service }}"
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "View details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
