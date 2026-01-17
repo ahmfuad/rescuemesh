@@ -1,0 +1,50 @@
+# Save this as low-resource-values.yaml
+
+# --- Elasticsearch (The Heavyweight) ---
+elasticsearch:
+  # Force single node
+  replicas: 1
+  minimumMasterNodes: 1
+  
+  # Use DigitalOcean Block Storage
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    storageClassName: "do-block-storage"
+    resources:
+      requests:
+        storage: 10Gi
+
+  # DRASTICALLY reduce resources
+  resources:
+    requests:
+      memory: "512Mi"   # Was likely 1Gi+
+      cpu: "100m"       # Was likely 1000m
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  
+  # Java configuration for low memory
+  esJavaOpts: "-Xmx512m -Xms512m"
+
+# --- Kibana ---
+kibana:
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# --- Beats ---
+filebeat:
+  resources:
+    requests:
+      memory: "50Mi"
+      cpu: "50m"
+
+metricbeat:
+  resources:
+    requests:
+      memory: "50Mi"
+      cpu: "50m"

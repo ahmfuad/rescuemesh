@@ -1,0 +1,17 @@
+# jaeger-values.yaml
+provisionDataStore:
+  cassandra: false
+  elasticsearch: false
+allInOne:
+  enabled: true
+  # Keep traces in memory (Reset on restart, but fast and cheap)
+  args:
+    - --memory.max-traces=10000
+storage:
+  type: memory
+agent:
+  enabled: false # We will send traces directly to the collector
+collector:
+  enabled: false
+query:
+  enabled: false

@@ -1,0 +1,67 @@
+# plg-values.yaml
+
+loki:
+  enabled: true
+  isDefault: true
+  persistence:
+    enabled: true
+    accessModes:
+    - ReadWriteOnce
+    size: 10Gi
+    storageClassName: do-block-storage
+  config:
+    table_manager:
+      retention_deletes_enabled: true
+      retention_period: 168h
+
+promtail:
+  enabled: true
+  config:
+    lokiAddress: http://loki:3100/loki/api/v1/push
+
+grafana:
+  enabled: true
+  sidecar:
+    datasources:
+      enabled: true
+  persistence:
+    enabled: true
+    storageClassName: do-block-storage
+    size: 5Gi
+  # --- NEW SECTION: Add Jaeger as a Data Source ---
+  additionalDataSources:
+    - name: Jaeger
+      type: jaeger
+      uid: jaeger
+      access: proxy
+      url: http://jaeger-query.monitoring.svc:16686
+      jsonData:
+        # Connect traces to logs (The "Holy Grail" feature)
+        nodeGraph:
+          enabled: true
+        traceToLogs:
+          datasourceUid: 'loki'
+          tags: ['job', 'instance', 'pod', 'namespace']
+          mappedTags: [{ key: 'service.name', value: 'service' }]
+          spanStartTimeShift: '-1h'
+          spanEndTimeShift: '1h'
+          filterByTraceID: false
+          filterBySpanID: false  
+
+# --- NEW ADDITION BELOW ---
+prometheus:
+  enabled: true
+  isDefault: false # Grafana will use this as a second datasource
+  alertmanager:
+    enabled: false # Keep it simple for now, use Grafana for alerting
+  server:
+    retention: 15d # Keep metrics for 15 days
+    persistentVolume:
+      enabled: true
+      storageClass: do-block-storage
+      size: 10Gi
+  # This configures Prometheus to scrape standard K8s metrics automatically
+  nodeExporter:
+    enabled: true # Gets CPU/RAM usage from the DigitalOcean Nodes
+  kubeStateMetrics:
+    enabled: true # Gets Pod status (Running/Failed/etc)

@@ -1,0 +1,42 @@
+# desperate-values.yaml
+elasticsearch:
+  replicas: 1
+  minimumMasterNodes: 1
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    storageClassName: "do-block-storage"
+    resources:
+      requests:
+        storage: 5Gi
+  
+  # The Trick: Very low requests to force scheduling
+  resources:
+    requests:
+      memory: "100Mi" # Lying to the scheduler
+      cpu: "10m"
+    limits:
+      memory: "768Mi" # Hard limit prevents node crash
+      cpu: "1000m"
+
+  # Java Heap: Bare minimum
+  esJavaOpts: "-Xmx256m -Xms256m"
+
+  # Disable heavy features
+  sysctlInitContainer:
+    enabled: false 
+
+kibana:
+  resources:
+    requests:
+      memory: "100Mi"
+      cpu: "10m"
+    limits:
+      memory: "512Mi"
+
+filebeat:
+  resources:
+    requests:
+      memory: "50Mi"
+      cpu: "10m"
+    limits:
+      memory: "200Mi"

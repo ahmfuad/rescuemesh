@@ -1,0 +1,75 @@
+# --- Elasticsearch Config ---
+elasticsearch:
+  replicas: 1
+  minimumMasterNodes: 1
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    storageClassName: "do-block-storage" 
+    resources:
+      requests:
+        storage: 10Gi
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+# --- Kibana Config ---
+kibana:
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+# --- Filebeat Config (Logs) ---
+filebeat:
+  daemonset:
+    enabled: true
+  filebeatConfig:
+    filebeat.yml: |
+      filebeat.inputs:
+      - type: container
+        paths:
+          - /var/log/containers/*.log
+        processors:
+        - add_kubernetes_metadata:
+            host: ${NODE_NAME}
+            matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+      output.elasticsearch:
+        host: '${NODE_NAME}'
+        hosts: '[${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}]'
+        username: "elastic" 
+        password: "${ELASTICSEARCH_PASSWORD}"
+
+# --- Metricbeat Config (Metrics) ---
+metricbeat:
+  daemonset:
+    enabled: true
+  deployment:
+    enabled: true
+  metricbeatConfig:
+    metricbeat.yml: |
+      metricbeat.modules:
+      - module: kubernetes
+        metricsets:
+          - container
+          - node
+          - pod
+          - system
+          - volume
+        period: 10s
+        host: "${NODE_NAME}"
+        hosts: ["https://${NODE_NAME}:10250"]
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        ssl.verification_mode: "none"
+      output.elasticsearch:
+        hosts: '[${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}]'
+        username: "elastic"
+        password: "${ELASTICSEARCH_PASSWORD}"
