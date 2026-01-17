@@ -51,26 +51,24 @@ for SERVICE_PATH in "${!SERVICE_MAP[@]}"; do
 done
 
 # Check for submodule changes
-SUBMODULE_CHANGES=$(git diff --submodule=short $BASE_SHA $HEAD_SHA 2>/dev/null | grep "^Submodule" || echo "")
+SUBMODULE_DIFF=$(git diff $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
 
-if [ -n "$SUBMODULE_CHANGES" ]; then
-    echo "Submodule changes detected:"
-    echo "$SUBMODULE_CHANGES"
+if [ -n "$SUBMODULE_DIFF" ]; then
+    echo "Checking for submodule changes..."
     
-    while IFS= read -r line; do
-        for SERVICE_PATH in "${!SERVICE_MAP[@]}"; do
-            if echo "$line" | grep -q "$SERVICE_PATH"; then
-                IFS=':' read -r SERVICE_NAME SERVICE_DIR DEPLOYMENT_NAME <<< "${SERVICE_MAP[$SERVICE_PATH]}"
-                
-                # Check if not already added
-                if [[ ! " ${CHANGED_SERVICES_LIST} " =~ " ${SERVICE_NAME} " ]]; then
-                    echo "✓ Detected submodule change in $SERVICE_NAME"
-                    CHANGED_SERVICES+=("{\"name\":\"$SERVICE_NAME\",\"dir\":\"$SERVICE_DIR\",\"image\":\"rescuemesh-$SERVICE_NAME\",\"deployment\":\"$DEPLOYMENT_NAME\"}")
-                    CHANGED_SERVICES_LIST="$CHANGED_SERVICES_LIST $SERVICE_NAME"
-                fi
+    for SERVICE_PATH in "${!SERVICE_MAP[@]}"; do
+        # Check if this service path appears in the diff
+        if echo "$SUBMODULE_DIFF" | grep -q "^diff --git a/$SERVICE_PATH b/$SERVICE_PATH"; then
+            IFS=':' read -r SERVICE_NAME SERVICE_DIR DEPLOYMENT_NAME <<< "${SERVICE_MAP[$SERVICE_PATH]}"
+            
+            # Check if not already added
+            if [[ ! " ${CHANGED_SERVICES_LIST} " =~ " ${SERVICE_NAME} " ]]; then
+                echo "✓ Detected submodule change in $SERVICE_NAME"
+                CHANGED_SERVICES+=("{\"name\":\"$SERVICE_NAME\",\"dir\":\"$SERVICE_DIR\",\"image\":\"rescuemesh-$SERVICE_NAME\",\"deployment\":\"$DEPLOYMENT_NAME\"}")
+                CHANGED_SERVICES_LIST="$CHANGED_SERVICES_LIST $SERVICE_NAME"
             fi
-        done
-    done <<< "$SUBMODULE_CHANGES"
+        fi
+    done
 fi
 
 # Check if k8s configs changed (deploy all services)
