@@ -10,6 +10,7 @@
 [submodule "rescuemesh-user-service"]
 	path = rescuemesh-user-service
 	url = https://github.com/ahmfuad/rescuemesh-user-service.git
+	branch = main
 [submodule "rescuemesh-skill-service"]
 	path = rescuemesh-skill-service
 	url = https://github.com/ahmfuad/rescuemesh-skill-service.git
